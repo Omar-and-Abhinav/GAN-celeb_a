@@ -26,7 +26,7 @@ class photo_dataset():
         for filename in glob.glob('*')[:number_of_photos]:
             image = plt.imread(filename)
             self.data.append(image)
-        
+        self.data = np.array(self.data)
         
         
         os.chdir('..')
@@ -70,7 +70,16 @@ class photo_dataset():
                 
         if green == 1:
             self.data_color["green"] = np.array(bluePixs)
-                
-
-
-
+    
+    def noisy_data(self, number_of_photos = 1, mean=0, std=1, by255=False):
+        noisy_data = []
+        factor = 1
+        if by255:
+            factor = 255
+        for image in self.data[:number_of_photos]:
+            # Add Guassian Noise to each image
+            noisy_image = image + np.random.normal(mean, std, image.shape)
+            # Keep the values between 0 and 255
+            noisy_image = np.clip(noisy_image, 0, 255) 
+            noisy_data.append(noisy_image/factor)
+        return noisy_data
