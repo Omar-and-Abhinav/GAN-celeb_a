@@ -103,17 +103,21 @@ class photo_dataset():
             noisy_data.append(noisy_image/factor)
         return np.array(noisy_data)
     
-    def split_data(self,list_images):
+    def split_data(self,list_images,perc):
         '''splits the data into testing and training data'''
         
-        perc=float(input('Enter the percentage of training data wanted:'))
-        length=round(perc*len(list_images))
-        xTrain=list_images[:length]
-        xTest=list_images[length:]
+        length = round(perc*len(list_images))             # number of images in training set
+        remainingLength = len(list_images[length:])       # number of images validation + number of images in test 
+        distrib=int(remainingLength / 4)
+        
+        xTrain=np.array(list_images[:length])
+        xVal=np.array(list_images[length : (length + (distrib * 3))])   
+        xTest=np.array(list_images[(length + (distrib * 3)):])
         
         print('    SPLITTED THE DATA INTO TRAINING AND TEST SET   ')
-        print('Numberof Training samples:',len(xTrain))
-        print('Numberof Test samples:',len(xTest))
+        print('Number of Training samples:',len(xTrain))
+        print('Number of Validation samples:',len(xVal))
+        print('Number of Test samples:',len(xTest))
         
-        return xTrain,xTest 
+        return xTrain,xVal,xTest 
         
