@@ -102,3 +102,18 @@ class photo_dataset():
             noisy_image = np.clip(noisy_image, 0, 255) 
             noisy_data.append(noisy_image/factor)
         return np.array(noisy_data)
+    
+    def split_data(self,list_images):
+        '''splits the data into testing and training data'''
+        
+        perc=float(input('Enter the percentage of training data wanted:'))
+        length=round(perc*len(list_images))
+        xTrain=list_images[:length]
+        xTest=list_images[length:]
+        
+        print('    SPLITTED THE DATA INTO TRAINING AND TEST SET   ')
+        print('Numberof Training samples:',len(xTrain))
+        print('Numberof Test samples:',len(xTest))
+        
+        return xTrain,xTest 
+        
