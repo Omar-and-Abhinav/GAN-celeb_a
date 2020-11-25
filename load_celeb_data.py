@@ -107,13 +107,15 @@ class photo_dataset():
         # number of images validation
         ratio = round(len(list_images) * valperc)
 
-        xTrain = np.array(list_images[:length])
-        xVal = np.array(list_images[length: (length + ratio)])
-        xTest = np.array(list_images[(length + ratio):])
+        xTrain = np.array(list_images[:length])/255
+        xVal = np.array(list_images[length: (length + ratio)])/255
+        xTest = np.array(list_images[(length + ratio):])/255
 
         print('    SPLITTED THE DATA INTO TRAINING AND TEST SET   ')
         print('Number of Training samples:', len(xTrain))
         print('Number of Validation samples:', len(xVal))
         print('Number of Test samples:', len(xTest))
+        
+        
 
         return xTrain, xVal, xTest
