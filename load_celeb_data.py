@@ -83,7 +83,7 @@ class photo_dataset():
         if green == 1:
             self.data_color["green"] = np.array(bluePixs)
 
-    def noisy_data(self, number_of_photos=1, mean=0, std=1, by255=False):
+    def noisy_data(self, list_images, mean=0, std=1, by255=False):
         '''Returns a subset of the dataset with Gaussian Noise. Set by255 to 
         True for values between 0 and 1.
         '''
@@ -91,7 +91,7 @@ class photo_dataset():
         factor = 1
         if by255:
             factor = 255
-        for image in self.data[:number_of_photos]:
+        for image in list_images:
             # Add Guassian Noise to each image
             noisy_image = image + np.random.normal(mean, std, image.shape)
             # Keep the values between 0 and 255
