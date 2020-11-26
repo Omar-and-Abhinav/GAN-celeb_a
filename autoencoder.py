@@ -5,7 +5,7 @@ from tensorflow.keras import Input
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow import keras 
-import os.path
+import os
 
 '''dataset = photo_dataset()
 dataset.load_data(30000)
@@ -24,25 +24,44 @@ if gpus:
 
     
 # Encoder
-inp = Input(shape = (109, 89, 3), name = 'input')
-x = Conv2D(32, (3, 3), activation='relu')(inp)
-#x = BatchNormalization()(x)
-x = MaxPool2D((2,2))(x)
-x = Conv2D(16, (3, 3), activation='relu')(x)
+encoder_inp = Input(shape = (109, 89, 3), name = 'input')
+x = Conv2D(32, (3, 3), activation='relu', name = 'cov1')(encoder_inp)
 x = BatchNormalization()(x)
 x = MaxPool2D((2,2))(x)
-x = Conv2D(8, (3, 3), activation='relu')(x)
-#Decoder
-x = Conv2DTranspose(8, (3, 3), activation = 'relu')(x)
+x = Conv2D(16, (3, 3), activation='relu', name = 'cov2')(x)
 x = BatchNormalization()(x)
-x = UpSampling2D((2,2))(x)
-x = Conv2DTranspose(16, (3, 3), activation = 'relu')(x)
+x = MaxPool2D((2,2))(x)
+x = Conv2D(8, (3, 3), activation='relu', name = 'cov3')(x)
 x = BatchNormalization()(x)
-x = UpSampling2D((2,2))(x)
-x = Conv2DTranspose(32, (3, 3), activation='relu')(x)
-out = Conv2DTranspose(3, (4, 4), activation = 'relu')(x)
+x = MaxPool2D((2,2))(x)
+encoder_out = Conv2D(8, (3, 3), activation='relu', name = 'cov4')(x)
+encoder = keras.Model(inputs = encoder_inp, 
+                      outputs = encoder_out, name='Encoder')
+encoder.summary()
 
-autoencoder = keras.Model(inputs = inp, outputs = out)
+
+# Decoder
+decoder_inp = Input(shape = encoder.get_layer('cov4').output_shape[1:])
+x = Conv2DTranspose(8, (3, 3), activation = 'relu', name = 'covtr1')(decoder_inp)
+x = BatchNormalization()(x)
+x = UpSampling2D((2,2))(x)
+x = Conv2DTranspose(8, (3, 3), activation = 'relu', name = 'covtr2')(x)
+x = BatchNormalization()(x)
+x = UpSampling2D((2,2))(x)
+x = Conv2DTranspose(16, (3, 3), activation = 'relu', name = 'covtr3')(x)
+x = BatchNormalization()(x)
+x = UpSampling2D((2,2))(x)
+decoder_out = Conv2DTranspose(3, (10, 6), activation='sigmoid', name = 'covtr4')(x)
+decoder = keras.Model(inputs = decoder_inp,
+                      outputs = decoder_out, name='Decoder')
+decoder.summary()
+
+#Autoencoder
+autoencoder_input = Input(shape = (109, 89, 3))
+encode = encoder(autoencoder_input)
+decode = decoder(encode)
+autoencoder = keras.Model(inputs = autoencoder_input,
+                          outputs = decode, name='Autoencoder')
 autoencoder.summary()
 
 def run(x_train, valid_split, epochs, batch):
@@ -81,4 +100,9 @@ def show_images(images, cols = 1, titles = None):
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
     plt.show()
 
-
+def save_model(folder_name):
+    os.chdir('./Models/autoencoder')
+    os.mkdir(f'{folder_name}')
+    autoencoder.save(f'./{folder_name}')
+    os.chdir('..')
+    os.chdir('..')
