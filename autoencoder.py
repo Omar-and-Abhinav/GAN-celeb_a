@@ -75,7 +75,8 @@ def run(x_train, valid_split, epochs, batch):
                     batch_size = batch)
 
 def show_images(images, cols = 1, titles = None):
-    """Display a list of images in a single figure with matplotlib.
+    """From https://gist.github.com/soply/f3eec2e79c165e39c9d540e916142ae1
+    Display a list of images in a single figure with matplotlib.
 
     Parameters
     ---------
