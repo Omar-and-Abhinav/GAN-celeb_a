@@ -51,3 +51,41 @@ disc_out = tf.keras.layers.Dense(1, activation = 'sigmoid')(x)
 discriminator = keras.Model(inputs = disc_inp, outputs = disc_out, name = 'Discriminator')
 discriminator.summary()
 
+def discriminator_loss(y_true, y_pred):
+    pass
+def generator_loss(y_true, y_pred):
+    pass
+
+class GAN(tf.keras.Model):
+    def __init__(self, discriminator, generator, latent_dim):
+        super(GAN, self).__init__()
+        self.discriminator = discriminator
+        self.generator = generator
+        self.latent_dim = latent_dim
+    def compile(self, d_optimizer, g_optimizer, d_loss, g_loss):
+        super(GAN, self).compile()
+        self.d_optimizer = d_optimizer
+        self.g_optimizer = g_optimizer
+        self.d_loss = d_loss
+        self.g_loss = g_loss
+    def train_step(self, data):
+        batch_size = tf.shape(data)[0]
+        random_latent = tf.random.normal((batch_size, self.latent_dim))
+        generated_images = self.generator(random_latent)
+        images = tf.concat([generated_images, data], axis=0)
+        labels = tf.concat(
+            [tf.zeroes(batch_size, 1), tf.ones(batch_size, 1)])
+        with tf.GradientTape() as tape:
+            predictions = self.discriminator(images)
+            d_loss = self.d_loss(labels, predictions)
+        grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
+        self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+        random_latent = tf.random.normal((batch_size, self.latent_dim))
+        with tf.GradientTape() as tape:
+            predictions = self.discriminator(self.generator(random_latent))
+            g_loss = self.g_loss(predictions)
+        grads = tape.gradient(g_loss, self.generator.trainable_weights)
+        self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
+        return {"d_loss": d_loss, "g_loss": g_loss}
+            
+        
