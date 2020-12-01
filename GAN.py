@@ -52,24 +52,35 @@ discriminator = keras.Model(inputs = disc_inp, outputs = disc_out, name = 'Discr
 discriminator.summary()
 
 def discriminator_loss(y_true, y_pred):
-    pass
-def generator_loss(y_true, y_pred):
-    pass
+    f1 = -tf.math.multiply(tf.math.log(y_pred), y_true)
+    f2 = -tf.math.multiply(tf.math.log(tf.ones(len(y_pred)) - y_pred), tf.ones(len(y_pred)) - y_true)
+    return(tf.math.reduce_mean(np.add(f1, f2)))
+    #return(f1, f2)
+    
+
+def generator_loss(y_pred):
+    return -tf.math.reduce_mean(tf.math.log(y_pred))
+
 
 class GAN(tf.keras.Model):
+    
     def __init__(self, discriminator, generator, latent_dim):
         super(GAN, self).__init__()
         self.discriminator = discriminator
         self.generator = generator
         self.latent_dim = latent_dim
+    
     def compile(self, d_optimizer, g_optimizer, d_loss, g_loss):
         super(GAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss = d_loss
         self.g_loss = g_loss
+    
     def train_step(self, data):
         batch_size = tf.shape(data)[0]
+        
+        #  DISCRIMINATOR
         random_latent = tf.random.normal((batch_size, self.latent_dim))
         generated_images = self.generator(random_latent)
         images = tf.concat([generated_images, data], axis=0)
@@ -80,6 +91,8 @@ class GAN(tf.keras.Model):
             d_loss = self.d_loss(labels, predictions)
         grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         self.d_optimizer.apply_gradients(zip(grads, self.discriminator.trainable_weights))
+        
+        #  GENERATOR
         random_latent = tf.random.normal((batch_size, self.latent_dim))
         with tf.GradientTape() as tape:
             predictions = self.discriminator(self.generator(random_latent))
@@ -88,4 +101,4 @@ class GAN(tf.keras.Model):
         self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
         return {"d_loss": d_loss, "g_loss": g_loss}
             
-        
+    
