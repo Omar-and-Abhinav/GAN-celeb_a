@@ -32,9 +32,8 @@ if gpus:
 #     fake_loss=loss_func(tf.zeros_like(fake_output), fake_output)
 #     return real_loss+fake_loss
 
-def generator_loss(y_pred):
-    return -tf.math.reduce_mean(tf.math.log(y_pred))
-    
+def generator_loss(fake_output):
+    return loss_func(tf.ones_like(fake_output), fake_output)
 
 init = tf.keras.initializers.RandomNormal(stddev=0.02, mean = 0.0)
 # GENERATOR    
