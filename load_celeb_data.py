@@ -17,7 +17,7 @@ class photo_dataset():
         self.data_gray = []
         self.data_color = {"red": [], "green": [], "blue": []}
 
-    def load_data(self, number_of_photos='max'):
+    def load_data(self, number_of_photos='max', scale = False):
         '''Load a dataset of photos. The dataset should be stored as a 
         subfolder of the directory where this python file is located. By
         default all the photos are loaded, but a limit can be specified 
@@ -32,7 +32,10 @@ class photo_dataset():
 
         for filename in filenames[:number_of_photos]:
             image = Image.open(filename)
-            self.data.append(np.array(image))
+            if scale:
+                self.data.append((np.array(image)- 127.5) / 127.5)
+            else:
+                self.data.append((np.array(image)))
             image.close()
         self.data = np.array(self.data)
 
