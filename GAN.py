@@ -10,7 +10,7 @@ import os
 loss_func = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 dataset = photo_dataset()
-dataset.load_data(30000)
+dataset.load_data(10000)
 #dataset.data = dataset.data/255
 #x_train, x_val, x_test = dataset.split_data(dataset.data, 0.8, 0.0)
 
@@ -60,15 +60,15 @@ disc_inp = Input(shape = (109, 89, 3), name = 'disc_inp')
 x = Conv2D(128, (4, 4), strides = (3, 3), name = 'firstDiscLayer', kernel_initializer=init)(disc_inp)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.5)(x)
+x = Dropout(0.2)(x)
 x = Conv2D(64, (3, 3), strides = (2, 2) , name='secondDiscLayer' , kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.5)(x)
+x = Dropout(0.2)(x)
 x = Conv2D(32, (3, 3), strides = (2, 2), name = 'thirdDiscLayer', kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.5)(x)
+x = Dropout(0.2)(x)
 x = tf.keras.layers.Flatten()(x)
 disc_out = tf.keras.layers.Dense(1, activation = 'sigmoid', kernel_initializer=init)(x)
 
@@ -109,8 +109,8 @@ def train_gans(data, train_real = True):
 
 
 
-epochs = 20
-batch_size = 10
+epochs = 50
+batch_size = 20
 split_factor = dataset.data.shape[0]/batch_size
 for epoch in range(epochs):
     print("Epoch Number", epoch + 1, end = ' ')
