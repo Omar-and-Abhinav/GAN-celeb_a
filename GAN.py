@@ -10,7 +10,7 @@ import os
 loss_func = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 dataset = photo_dataset()
-dataset.load_data(10000)
+dataset.load_data(70000)
 #dataset.data = dataset.data/255
 #x_train, x_val, x_test = dataset.split_data(dataset.data, 0.8, 0.0)
 
@@ -40,16 +40,16 @@ init = tf.keras.initializers.RandomNormal(stddev=0.02, mean = 0.0)
 gen_inp = Input(shape = (100,), name = 'gen_noise')
 x = keras.layers.Dense(13*11*3, activation = 'relu', name = 'covtr1')(gen_inp)
 x = keras.layers.Reshape((13, 11, 3))(x)
-x = Conv2DTranspose(filters = 16,kernel_size =  (4,4), strides = (2, 2), padding = 'same',  name = 'covtr2', kernel_initializer=init)(x)
+x = Conv2DTranspose(filters = 32,kernel_size =  (4,4), strides = (2, 2), padding = 'same',  name = 'covtr2', kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-x = Conv2DTranspose(filters = 32, kernel_size = (4, 4), strides = (2, 2), padding = 'same', name = 'covtr3', kernel_initializer=init)(x)
+x = Conv2DTranspose(filters = 64, kernel_size = (4, 4), strides = (2, 2), padding = 'same', name = 'covtr3', kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-x = Conv2DTranspose(filters = 64,kernel_size =  (3,3), strides = (2, 2), padding = 'same',  name = 'covtr4', kernel_initializer=init)(x)
+x = Conv2DTranspose(filters = 128,kernel_size =  (3,3), strides = (2, 2), padding = 'same',  name = 'covtr4', kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
-gen_out = Conv2DTranspose(3, (6, 2), activation='linear', name = 'covtr5', kernel_initializer=init)(x)
+gen_out = Conv2DTranspose(3, (6, 2), activation='relu', name = 'covtr5', kernel_initializer=init)(x)
 
 generator = keras.Model(inputs = gen_inp, outputs = gen_out, name = 'Generator' )
 generator.summary()
@@ -61,11 +61,11 @@ x = Conv2D(128, (4, 4), strides = (3, 3), name = 'firstDiscLayer', kernel_initia
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
 x = Dropout(0.2)(x)
-x = Conv2D(64, (3, 3), strides = (2, 2) , name='secondDiscLayer' , kernel_initializer=init)(x)
+x = Conv2D(64, (4, 4), strides = (2, 2) , name='secondDiscLayer' , kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
 x = Dropout(0.2)(x)
-x = Conv2D(32, (3, 3), strides = (2, 2), name = 'thirdDiscLayer', kernel_initializer=init)(x)
+x = Conv2D(32, (4, 4), strides = (2, 2), name = 'thirdDiscLayer', kernel_initializer=init)(x)
 x = LeakyReLU(alpha = 0.2)(x)
 x = BatchNormalization(momentum=0.8)(x)
 x = Dropout(0.2)(x)
@@ -75,8 +75,8 @@ disc_out = tf.keras.layers.Dense(1, activation = 'sigmoid', kernel_initializer=i
 discriminator = keras.Model(inputs = disc_inp, outputs = disc_out, name = 'Discriminator')
 discriminator.summary()
 
-d_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
-g_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
+d_optimizer = keras.optimizers.Adam(1e-4, 0.5)
+g_optimizer = keras.optimizers.Adam(1e-4, 0.5)
 latent_dim = (100,)
 
 @tf.function
@@ -108,10 +108,15 @@ def train_gans(data, train_real = True):
         return g_loss, d_loss
 
 
-
-epochs = 50
+for i in range(5):
+    try:
+        os.mkdir(f'./ganimages/model3/image{i}/')
+    except:
+        pass
+epochs = 200
 batch_size = 20
 split_factor = dataset.data.shape[0]/batch_size
+losses_list = []
 for epoch in range(epochs):
     print("Epoch Number", epoch + 1, end = ' ')
     d_losses = []
@@ -125,7 +130,24 @@ for epoch in range(epochs):
                     losses = train_gans(real_images, False)
                     d_losses.append(losses[1])
                     g_losses.append(losses[0])
+    if epoch%10 == 0:
+        try:
+            os.mkdir(f'./Models/gans/model3/epoch{epoch}')
+            tf.keras.models.save_model(generator, f'.Models/gans/model3/epoch{epoch}')
+        except:
+            pass
+    for i in range(5):
+        image = generator.predict(tf.random.normal((1, 100), seed = i))
+        image = image.reshape(109,89,3)
+        image = image/255
+        image = np.clip(image, 0, 1)
+        try:
+            plt.imsave(f'./ganimages/model3/image{i}/{epoch}.jpg', image)
+        except:
+            pass
     print('d_loss:', np.mean(d_losses), 'g_loss:', np.mean(g_losses))
+    losses_list.append((np.mean(d_losses), np.mean(g_losses)))
+    
     del d_losses, g_losses
 
 def show_images(images, cols = 1, titles = None):
