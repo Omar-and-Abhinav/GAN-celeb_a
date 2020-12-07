@@ -7,13 +7,12 @@ import matplotlib.pyplot as plt
 from tensorflow import keras 
 import os
 
-loss_func = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-dataset = photo_dataset()
-dataset.load_data(70000)
+# dataset = photo_dataset()
+# dataset.load_data(71000)
 #dataset.data = dataset.data/255
 #x_train, x_val, x_test = dataset.split_data(dataset.data, 0.8, 0.0)
-
+    
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
   try:
@@ -21,35 +20,33 @@ if gpus:
       tf.config.experimental.set_memory_growth(gpu, True)
   except RuntimeError as e:
     print(e)
-    
 
-# def discriminator_loss(real_output, fake_output):
-#     # f1 = -tf.math.multiply(tf.math.log(y_pred), y_true)
-#     # f2 = -tf.math.multiply(tf.math.log(tf.ones(y_pred.shape[0]) - y_pred), tf.ones(y_pred.shape[0]) - y_true)
-#     # return(tf.math.reduce_mean(tf.add(f1, f2)))
-#     # return(f1, f2)
-#     real_loss=loss_func(tf.ones_like(real_output), real_output)
-#     fake_loss=loss_func(tf.zeros_like(fake_output), fake_output)
-#     return real_loss+fake_loss
 
-def generator_loss(fake_output):
-    return loss_func(tf.ones_like(fake_output), fake_output)
+
+dataset = photo_dataset()
+dataset.load_data(71000)
+d_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
+g_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
+latent_dim = (100,)
+loss_func = tf.keras.losses.BinaryCrossentropy(from_logits = True)    
+
+
 
 init = tf.keras.initializers.RandomNormal(stddev=0.02, mean = 0.0)
+
 # GENERATOR    
 gen_inp = Input(shape = (100,), name = 'gen_noise')
-x = keras.layers.Dense(13*11*3, activation = 'relu', name = 'covtr1')(gen_inp)
-x = keras.layers.Reshape((13, 11, 3))(x)
-x = Conv2DTranspose(filters = 32,kernel_size =  (4,4), strides = (2, 2), padding = 'same',  name = 'covtr2', kernel_initializer=init)(x)
-x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-x = Conv2DTranspose(filters = 64, kernel_size = (4, 4), strides = (2, 2), padding = 'same', name = 'covtr3', kernel_initializer=init)(x)
-x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-x = Conv2DTranspose(filters = 128,kernel_size =  (3,3), strides = (2, 2), padding = 'same',  name = 'covtr4', kernel_initializer=init)(x)
-x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-gen_out = Conv2DTranspose(3, (6, 2), activation='relu', name = 'covtr5', kernel_initializer=init)(x)
+x = keras.layers.Dense(10*10*3, activation = 'relu', name = 'Dense')(gen_inp)
+x = keras.layers.Reshape((10, 10, 3))(x)
+x = Conv2DTranspose(filters = 32,kernel_size =  (3, 3),activation = 'relu', strides = (2, 2), padding = 'same', name = 'covtr2')(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Conv2DTranspose(filters = 64, kernel_size = (3, 3),activation = 'relu', strides = (2, 2), padding = 'same', name = 'covtr3')(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Conv2DTranspose(filters = 128,kernel_size =  (3,3), strides = (2, 2),activation = 'relu', padding = 'same', name = 'covtr4')(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Conv2DTranspose(filters = 128,kernel_size =  (3,3), padding = 'same', name = 'covtr5',activation = 'relu')(x)
+x = BatchNormalization(momentum = 0.8)(x)
+gen_out = Conv2DTranspose(3, (30, 10), activation='linear', name = 'covtr6', kernel_initializer=init)(x)
 
 generator = keras.Model(inputs = gen_inp, outputs = gen_out, name = 'Generator' )
 generator.summary()
@@ -57,30 +54,35 @@ generator.summary()
 
 # DISCRIMINATOR
 disc_inp = Input(shape = (109, 89, 3), name = 'disc_inp')
-x = Conv2D(128, (4, 4), strides = (3, 3), name = 'firstDiscLayer', kernel_initializer=init)(disc_inp)
+x = Conv2D(64, (4, 4), strides = (3, 3), name = 'firstDiscLayer')(disc_inp)
 x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.2)(x)
-x = Conv2D(64, (4, 4), strides = (2, 2) , name='secondDiscLayer' , kernel_initializer=init)(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Dropout(0.5)(x)
+x = Conv2D(128, (3, 3), strides = (2, 2) , name='secondDiscLayer' )(x)
 x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.2)(x)
-x = Conv2D(32, (4, 4), strides = (2, 2), name = 'thirdDiscLayer', kernel_initializer=init)(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Dropout(0.5)(x)
+x = Conv2D(256, (3, 3), strides = (2, 2), name = 'thirdDiscLayer')(x)
 x = LeakyReLU(alpha = 0.2)(x)
-x = BatchNormalization(momentum=0.8)(x)
-x = Dropout(0.2)(x)
+x = BatchNormalization(momentum = 0.8)(x)
+x = Dropout(0.5)(x)
 x = tf.keras.layers.Flatten()(x)
-disc_out = tf.keras.layers.Dense(1, activation = 'sigmoid', kernel_initializer=init)(x)
+disc_out = tf.keras.layers.Dense(1, activation = 'sigmoid')(x)
 
 discriminator = keras.Model(inputs = disc_inp, outputs = disc_out, name = 'Discriminator')
 discriminator.summary()
 
-d_optimizer = keras.optimizers.Adam(1e-4, 0.5)
-g_optimizer = keras.optimizers.Adam(1e-4, 0.5)
-latent_dim = (100,)
+# d_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
+# g_optimizer = keras.optimizers.Adam(1.5e-4,0.5)
+# latent_dim = (100,)
 
-@tf.function
-def train_gans(data, train_real = True):
+
+def step_train(data, batch_size, train_real = True):
+        """function represents operations for each step in an epoch
+        """
+        
+        d_loss = 0.0
+        g_loss = 0.0
         data = tf.cast(data, tf.float32)
         data = tf.reshape(data, (-1, 109, 89, 3))
         random_latent = tf.random.normal((batch_size,) + latent_dim)
@@ -89,66 +91,78 @@ def train_gans(data, train_real = True):
         #     [tf.zeros(batch_size, 1), tf.ones(batch_size, 1)], axis = 0)
         # 
         with tf.GradientTape() as disc_tape, tf.GradientTape() as gen_tape:
-            generated_images = generator(random_latent, training = True)
             if train_real:
-                predictions = discriminator(data, training = True)
-                labels = tf.ones((batch_size, 1))
-                d_loss = loss_func(labels, predictions)
+                generated_images = generator(random_latent, training = True)
+                real_output = discriminator(data, training = True)
+                fake_output = discriminator(generated_images, training = True)
+                d_loss = discriminator_loss(real_output, fake_output)
+                disc_grad = disc_tape.gradient(d_loss, discriminator.trainable_variables)
+                d_optimizer.apply_gradients(zip(disc_grad , discriminator.trainable_variables))
+                
             else:
-                predictions = discriminator(generated_images, training = True)
-                labels = tf.zeros((batch_size, 1))
-                d_loss = loss_func(labels, predictions)
-            fake_output = discriminator(generated_images, training = True)
-            g_loss = generator_loss(fake_output)
+                generated_images = generator(random_latent, training = True)
+                fake_output = discriminator(generated_images, training = True)
+                g_loss = generator_loss(fake_output)
+                gen_grad = gen_tape.gradient(g_loss, generator.trainable_variables)
+                g_optimizer.apply_gradients(zip(gen_grad , generator.trainable_variables))
+                
             
-            disc_grad = disc_tape.gradient(d_loss, discriminator.trainable_weights)
-            gen_grad = gen_tape.gradient(g_loss, generator.trainable_variables)
-            d_optimizer.apply_gradients(zip(disc_grad , discriminator.trainable_weights))
-            g_optimizer.apply_gradients(zip(gen_grad , generator.trainable_weights))
         return g_loss, d_loss
-
-
-for i in range(5):
-    try:
-        os.mkdir(f'./ganimages/model3/image{i}/')
-    except:
-        pass
-epochs = 200
-batch_size = 20
-split_factor = dataset.data.shape[0]/batch_size
-losses_list = []
-for epoch in range(epochs):
-    print("Epoch Number", epoch + 1, end = ' ')
-    d_losses = []
-    g_losses = []
-    for step, real_images in enumerate(np.split(dataset.data, split_factor)):
-                if step%2==0:
-                    losses = train_gans(real_images)
-                    d_losses.append(losses[1])
-                    g_losses.append(losses[0])
-                else:
-                    losses = train_gans(real_images, False)
-                    d_losses.append(losses[1])
-                    g_losses.append(losses[0])
-    if epoch%10 == 0:
-        try:
-            os.mkdir(f'./Models/gans/model3/epoch{epoch}')
-            tf.keras.models.save_model(generator, f'.Models/gans/model3/epoch{epoch}')
-        except:
-            pass
-    for i in range(5):
-        image = generator.predict(tf.random.normal((1, 100), seed = i))
-        image = image.reshape(109,89,3)
-        image = image/255
-        image = np.clip(image, 0, 1)
-        try:
-            plt.imsave(f'./ganimages/model3/image{i}/{epoch}.jpg', image)
-        except:
-            pass
-    print('d_loss:', np.mean(d_losses), 'g_loss:', np.mean(g_losses))
-    losses_list.append((np.mean(d_losses), np.mean(g_losses)))
     
-    del d_losses, g_losses
+    
+def start_train(dataset, epochs = 3, batchsize = 10):
+    """function initializes the training process for both the 
+       models in alternating manner. Each step for an epoch trains 
+       a single model, starting with the discriminator model and
+       saves images generated by the generator for each epoch.
+       dnum, gnum: No. of non-zero loss values for discriminator
+                   & generator respectively
+    """
+       
+    split_factor = dataset.data.shape[0]/batchsize
+    for epoch in range(epochs):
+        print("Epoch Number", epoch + 1, end = ' ')
+        d_losses = []
+        g_losses = []
+        dnum = 0
+        gnum = 0
+        for step, real_images in enumerate(np.split(dataset.data, split_factor)):
+                if step%2==0 and step != 0:
+                    losses = step_train(real_images, batchsize, False)
+                    d_losses.append(losses[1])
+                    g_losses.append(losses[0])
+                    gnum+=1
+                else:
+                    losses = step_train(real_images, batchsize)
+                    d_losses.append(losses[1])
+                    g_losses.append(losses[0])
+                    dnum+=1
+        
+        image = generator.predict(tf.random.normal((1, 100)))
+        image = image.reshape(109, 89, 3)
+        image = image / 255
+        image = np.clip(image, 0, 1)
+        plt.imsave(f'./ganimages/omarGen3imgs/{epoch}.jpg', image)
+        print('d_loss:', tf.print(sum(d_losses) / dnum), 'g_loss:', tf.print(sum(g_losses) / gnum))
+        del d_losses, g_losses
+    
+    
+
+loss_func = tf.keras.losses.BinaryCrossentropy(from_logits = True)
+def discriminator_loss(real_output, fake_output):
+    """function returns loss value of discriminator for
+       each epoch
+    """
+    real_loss=loss_func(tf.ones_like(real_output), real_output)
+    fake_loss=loss_func(tf.zeros_like(fake_output), fake_output)
+    return real_loss+fake_loss
+
+def generator_loss(fake_output):
+    """function returns loss value of generator for
+       each epoch
+    """
+    return loss_func(tf.ones_like(fake_output), fake_output)
+
 
 def show_images(images, cols = 1, titles = None):
     """From https://gist.github.com/soply/f3eec2e79c165e39c9d540e916142ae1
@@ -173,3 +187,4 @@ def show_images(images, cols = 1, titles = None):
         a.set_title(title)
     fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
     plt.show()
+    
