@@ -14,10 +14,9 @@ class photo_dataset():
     def __init__(self, folder_name='celeb_a'):
         self.folder_name = folder_name
         self.data = []
-        self.data_gray = []
         self.data_color = {"red": [], "green": [], "blue": []}
 
-    def load_data(self, number_of_photos='max', scale = False):
+    def load_data(self, number_of_photos='max', scale = 0):
         '''Load a dataset of photos. The dataset should be stored as a 
         subfolder of the directory where this python file is located. By
         default all the photos are loaded, but a limit can be specified 
@@ -32,12 +31,12 @@ class photo_dataset():
 
         for filename in filenames[:number_of_photos]:
             image = Image.open(filename)
-            if scale:
-                self.data.append((np.array(image)- 127.5) / 127.5)
+            if scale == 1:
+                self.data.append(np.array(image, dtype = np.float32)/255)
             else:
-                self.data.append((np.array(image)))
+                self.data.append((np.array(image, dtype = np.float32)))
             image.close()
-        self.data = np.array(self.data)
+        self.data = np.array(self.data, dtype = np.float32)
 
         os.chdir('..')
 
@@ -54,17 +53,20 @@ class photo_dataset():
         except AssertionError:
             print('Data not loaded')
 
-    def grayscale(self, number_of_photos=1, image_number=None):
-        '''Stores a grayscale version of the loaded_dataset in data_grey
+    def grayscale(self, images, image_number=None):
+        '''Stores a grayscale version of the passed data in data_grey
         '''
-        for img in self.data[:number_of_photos]:
+        data_gray = []
+        for img in images:
             r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
             gray = 0.2989*r + 0.5870*g + 0.1140*b
-            self.data_gray.append(gray)
-
+            data_gray.append(np.array(gray, dtype = np.float32))
+            del gray, r, g, b
+        
         if image_number != None:
-            plt.imshow(self.data_gray[image_number], cmap=plt.get_cmap('gray'))
-
+            plt.imshow(data_gray[image_number], cmap=plt.get_cmap('gray'))
+        
+        return np.array(data_gray, dtype = np.float32)
     def color_channels(self, number_of_photos=1, red=0, green=0, blue=0):
         '''Stores the respective red, green and blue channels of the photos
         in data_color dictionary with keys red, green, blue.
