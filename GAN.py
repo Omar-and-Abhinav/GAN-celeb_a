@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from tensorflow import keras 
 import os
 import tensorflow.keras.backend as K
+from tensorflow.keras.models import load_model
 
 # dataset = photo_dataset()
 # dataset.load_data(71000)
@@ -194,3 +195,13 @@ def show_images(images, cols = 1, titles = None):
     plt.show()
 
 start_train(dataset, 50, 10)
+
+def results(model_num):
+    gen = load_model(f"C:/Users/omarb/Desktop/projects/GAN-celeb_a/Models/gans/MoreDataModel/model{model_num}.h5")
+
+    for i in range(30):
+        image = gen.predict(tf.random.normal((1, 100)))
+        image = image / 255
+        image = image.reshape(55, 45, 3)
+        image = np.clip(image, 0, 1)
+        plt.imsave(f'./ganimages/moreDataRes/Model{model_num}/{i}.jpg', image)
